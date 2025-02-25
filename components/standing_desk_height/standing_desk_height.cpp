@@ -32,9 +32,10 @@ void StandingDeskHeightSensor::set_decoder_variant(DecoderVariant decoder_varian
       this->decoder = new DeskDecoder();
       break;
     default:
-      ESP_LOGE(TAG, "Unknown decoder variant %d", (uint8_t)decoder_variant);
-      this->decoder = nullptr;
-      return;
+      ESP_LOGW(TAG, "Unknown decoder variant %d, defaulting to Alza", (uint8_t)decoder_variant);
+      this->decoder_variant = DECODER_VARIANT_ALZA;
+      this->decoder = new DeskDecoder();
+      break;
   }
 }
 
