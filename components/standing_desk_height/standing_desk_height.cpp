@@ -11,6 +11,12 @@ void StandingDeskHeightSensor::set_decoder_variant(DecoderVariant decoder_varian
     this->decoder = nullptr;
   }
 
+  // If the variant is unknown, default to ALZA.
+  if (decoder_variant == DECODER_VARIANT_UNKNOWN) {
+    ESP_LOGW(TAG, "Decoder variant unknown, defaulting to Alza decoder");
+    decoder_variant = DECODER_VARIANT_ALZA;
+  }
+
   this->decoder_variant = decoder_variant;
   switch (decoder_variant) {
     case DECODER_VARIANT_JARVIS:
@@ -22,11 +28,11 @@ void StandingDeskHeightSensor::set_decoder_variant(DecoderVariant decoder_varian
     case DECODER_VARIANT_OMNIDESK:
       this->decoder = new OmnideskDecoder();
       break;
-    case DECODER_VARIANT_UNKNOWN:
-      this->decoder = nullptr;
-      return;
+    case DECODER_VARIANT_ALZA:    // Now defaults to Alza when unknown
+      this->decoder = new DeskDecoder();
+      break;
     default:
-      ESP_LOGE(TAG, "Unknown decoder variant %d", (uint8_t) decoder_variant);
+      ESP_LOGE(TAG, "Unknown decoder variant %d", (uint8_t)decoder_variant);
       this->decoder = nullptr;
       return;
   }
