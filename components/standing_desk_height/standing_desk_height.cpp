@@ -48,17 +48,16 @@ void StandingDeskHeightSensor::start_decoder_detection() {
 
 void StandingDeskHeightSensor::try_next_decoder() {
   if (this->decoder_variant == DECODER_VARIANT_COUNT - 1) {
-    ESP_LOGW(TAG, "No valid decoder found. Please make sure your desk is reporting the height and you can see it on the keypad");
-
+    ESP_LOGW(TAG, "No valid decoder found. Defaulting to Alza decoder");
     delete this->decoder;
     this->decoder = nullptr;
-
-    this->decoder_variant = DECODER_VARIANT_UNKNOWN;
+    // Instead of setting to UNKNOWN, set explicitly to ALZA
+    this->set_decoder_variant(DECODER_VARIANT_ALZA);
     this->is_detecting = false;
     return;
   }
 
-  this->set_decoder_variant((DecoderVariant) (this->decoder_variant + 1));
+  this->set_decoder_variant((DecoderVariant)(this->decoder_variant + 1));
 
   const LogString *variant_s = decoder_variant_to_string(this->decoder_variant);
   ESP_LOGD(TAG, "Attempting next decoder variant: %s", LOG_STR_ARG(variant_s));
