@@ -1,4 +1,4 @@
-#include "desk_decoder.h"
+#include "alza_decoder.h"
 
 namespace esphome {
 namespace standing_desk_height {
