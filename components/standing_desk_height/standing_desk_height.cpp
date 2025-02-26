@@ -78,16 +78,15 @@ void StandingDeskHeightSensor::setup() {
 }
 
 void StandingDeskHeightSensor::loop() {
-  while (this->available() > 0)
-  {
+  while (this->available() > 0) {
     uint8_t byte;
     this->read_byte(&byte);
 
-    ESP_LOGVV(TAG, "Reading byte: %d", byte);
+    ESP_LOGD(TAG, "UART Received byte: 0x%02X", byte);
 
     if (this->decoder != nullptr && this->decoder->put(byte)) {
       float height = this->decoder->decode();
-      ESP_LOGVV(TAG, "Got desk height: %f", height);
+      ESP_LOGI(TAG, "Desk height detected: %.1f cm", height);
       this->last_read = height;
     }
   }
@@ -95,18 +94,15 @@ void StandingDeskHeightSensor::loop() {
   if (this->is_detecting) {
     if (this->last_read != -1) {
       this->is_detecting = false;
-
       const LogString *variant_s = decoder_variant_to_string(this->decoder_variant);
-      ESP_LOGI(TAG, "Decoder detection complete. Correct decoder variant: %s", LOG_STR_ARG(variant_s));
-      ESP_LOGI(TAG, "If you want to make this change permanent, add the following to this sensor's configuration:");
-      ESP_LOGI(TAG, "  variant: %s", LOG_STR_ARG(variant_s));
+      ESP_LOGI(TAG, "Decoder detection complete: %s", LOG_STR_ARG(variant_s));
     } else if (millis() - this->started_detecting_at > 1000) {
-      const LogString *variant_s = decoder_variant_to_string(this->decoder_variant);
-      ESP_LOGD(TAG, "Decoder %s does not appear to work; trying next decoder", LOG_STR_ARG(variant_s));
+      ESP_LOGD(TAG, "Trying next decoder");
       this->try_next_decoder();
     }
   }
 }
+
 
 void StandingDeskHeightSensor::update() {
   if (this->last_read > 0 && this->last_read != this->last_published) {
