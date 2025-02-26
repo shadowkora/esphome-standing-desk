@@ -1,16 +1,16 @@
 substitutions:
   # UART for serial communication with the control box
-  standing_desk_uart_rx_pin: D3
+  standing_desk_uart_rx_pin: "17"   # RJ45 Pin 2 = GPIO17 (D-RX)
   
   # Digital pin reading the Key channel (button press indicator)
-  standing_desk_key_pin: D4
+  standing_desk_key_pin: "16"         # RJ45 Pin 4 = GPIO16 (KEY-1)
   
   # Control panel command pins
-  standing_desk_up_pin: D7
-  standing_desk_down_pin: D8
+  standing_desk_up_pin: "21"          # RJ45 Pin 7 = GPIO21
+  standing_desk_down_pin: "22"        # RJ45 Pin 8 = GPIO22
   
   # Variant and height range for this Uplift desk
-  standing_desk_variant: "uplift"
+  standing_desk_variant: "alza"
   standing_desk_min_height: "62"
   standing_desk_max_height: "128"
 
