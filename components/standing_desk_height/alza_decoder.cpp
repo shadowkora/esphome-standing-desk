@@ -1,14 +1,20 @@
 #include "alza_decoder.h"
+#include "esphome/core/log.h"
 
 namespace esphome {
 namespace standing_desk_height {
 
+static const char *const TAG = "DeskDecoder";
+
 bool DeskDecoder::put(uint8_t b) {
+  ESP_LOGD(TAG, "Received byte: 0x%02X", b);
+
   switch (state_) {
     case State::WAIT_START:
       if (b == 0x5A) {
+        ESP_LOGD(TAG, "Start byte detected.");
         state_ = State::BYTE1;
-        checksum_ = 0;  // reset checksum accumulator
+        checksum_ = 0;  // Reset checksum accumulator
       }
       break;
 
@@ -16,34 +22,38 @@ bool DeskDecoder::put(uint8_t b) {
       buf_[0] = b;
       checksum_ = b;
       state_ = State::BYTE2;
+      ESP_LOGD(TAG, "Byte1: 0x%02X", b);
       break;
 
     case State::BYTE2:
       buf_[1] = b;
       checksum_ += b;
       state_ = State::BYTE3;
+      ESP_LOGD(TAG, "Byte2: 0x%02X", b);
       break;
 
     case State::BYTE3:
       buf_[2] = b;
       checksum_ += b;
       state_ = State::BYTE4;
+      ESP_LOGD(TAG, "Byte3: 0x%02X", b);
       break;
 
     case State::BYTE4:
       buf_[3] = b;
       checksum_ += b;
       state_ = State::CHECKSUM;
+      ESP_LOGD(TAG, "Byte4 (Display Mode): 0x%02X", b);
       break;
 
     case State::CHECKSUM:
-      // Checksum is (byte1+byte2+byte3+byte4) & 0xff, compare to received b.
+      ESP_LOGD(TAG, "Checksum received: 0x%02X, calculated: 0x%02X", b, (checksum_ & 0xff));
       if ((checksum_ & 0xff) == b) {
-        // Valid frame received. Prepare for next frame.
+        ESP_LOGD(TAG, "Valid frame received!");
         state_ = State::WAIT_START;
         return true;
       } else {
-        // Checksum error. Reset state.
+        ESP_LOGW(TAG, "Checksum error! Resetting state.");
         state_ = State::WAIT_START;
       }
       break;
@@ -73,33 +83,25 @@ int DeskDecoder::decode_digit(uint8_t b) {
 }
 
 float DeskDecoder::decode() {
-  // Decode the three display digits from buf_[0] (first), buf_[1] (second), buf_[2] (third)
   int d1 = decode_digit(buf_[0]);
   int d2 = decode_digit(buf_[1]);
   int d3 = decode_digit(buf_[2]);
 
-  // If any digit is unknown, return an error value (could also throw an exception)
   if (d1 < 0 || d2 < 0 || d3 < 0) {
+    ESP_LOGW(TAG, "Error decoding digits: %d %d %d", d1, d2, d3);
     return -1.0f;
   }
 
-  // Check if the high bit of the second byte is set.
-  // If so, the decimal point is shown (per protocol, e.g. 0xBF instead of 0x3F for digit 0)
   bool has_decimal = (buf_[1] & 0x80) != 0;
-
-  int value;
   float height;
-  if (has_decimal) {
-    // E.g. digits 7,6,5 -> "76.5"  (first two digits form the integer part)
-    value = d1 * 10 + d2;
-    height = value + d3 / 10.0f;
-  } else {
-    // Without a decimal point the number is read as a three-digit integer (e.g. 101 means 101.0)
-    value = d1 * 100 + d2 * 10 + d3;
-    height = static_cast<float>(value);
-  }
 
-  // (buf_[3] is the display mode indicator; here we ignore it, but it could be used for additional logic.)
+  if (has_decimal) {
+    height = (d1 * 10 + d2) + (d3 / 10.0f);
+    ESP_LOGD(TAG, "Decoded height: %.1f (with decimal)", height);
+  } else {
+    height = (d1 * 100 + d2 * 10 + d3);
+    ESP_LOGD(TAG, "Decoded height: %.1f", height);
+  }
 
   return height;
 }
